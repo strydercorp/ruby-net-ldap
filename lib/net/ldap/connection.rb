@@ -85,9 +85,13 @@ class Net::LDAP::Connection #:nodoc:
 
     ctx = OpenSSL::SSL::SSLContext.new
 
+    puts "[LDAP] [#{Time.now}] Setting params on OpenSSL::SSL::SSLContext with #{tls_options}"
+
     # By default, we do not verify certificates. For a 1.0 release, this should probably be changed at some point.
     # See discussion in https://github.com/ruby-ldap/ruby-net-ldap/pull/161
     ctx.set_params(tls_options) unless tls_options.empty?
+
+    puts "[LDAP] [#{Time.now}] Creating new OpenSSL::SSL::SSLSocket instance"
 
     conn = OpenSSL::SSL::SSLSocket.new(io, ctx)
 
@@ -719,7 +723,10 @@ class Net::LDAP::Connection #:nodoc:
   # Wrap around Socket.tcp to normalize with other Socket initializers
   class DefaultSocket
     def self.new(host, port, socket_opts = {})
-      Socket.tcp(host, port, socket_opts)
+      puts "[LDAP] [#{Time.now}] Initializing Socket.tcp #{socket_opts}"
+      rv = Socket.tcp(host, port, socket_opts)
+      puts "[LDAP] [#{Time.now}] Socket.tcp has been initialized"
+      rv
     end
   end
 end # class Connection
