@@ -51,10 +51,13 @@ class Net::LDAP::Connection #:nodoc:
     errors = []
     hosts.each do |host, port|
       begin
+        puts "[LDAP] [#{Time.now}] Preparing socket on host and port"
         prepare_socket(server.merge(socket: @socket_class.new(host, port, socket_opts)), timeout)
         return
       rescue Net::LDAP::Error, SocketError, SystemCallError,
              OpenSSL::SSL::SSLError => e
+        puts "[LDAP] [#{Time.now}] Encountered error during open_connection - #{e.message}"
+        puts e.message
         # Ensure the connection is closed in the event a setup failure.
         close
         errors << [e, host, port]
@@ -90,19 +93,24 @@ class Net::LDAP::Connection #:nodoc:
 
     use_nonblocking_connect = timeout && !ENV['FORCE_BLOCKING_LDAP_SOCKET'] == 'true'
 
+    puts "[LDAP] [#{Time.now}] Using non blocking connect is #{use_nonblocking_connect}"
+
     begin
       if use_nonblocking_connect
         conn.connect_nonblock
       else
         conn.connect
       end
+      puts "[LDAP] [#{Time.now}] Connect is finished"
     rescue IO::WaitReadable
+      puts "[LDAP] [#{Time.now}] Rescued from IO::WaitReadable"
       if IO.select([conn], nil, nil, timeout)
         retry
       else
         raise Errno::ETIMEDOUT, "OpenSSL connection read timeout"
       end
     rescue IO::WaitWritable
+      puts "[LDAP] [#{Time.now}] Rescued from IO::WaitWritable"
       if IO.select(nil, [conn], nil, timeout)
         retry
       else
@@ -112,6 +120,8 @@ class Net::LDAP::Connection #:nodoc:
 
     # Doesn't work? Or maybe it is needed if connect_nonblock?
     conn.sync_close = use_nonblocking_connect && !ENV['DISABLE_SYNC_CLOSE_LDAP_SOCKET'] == 'true'
+
+    puts "[LDAP] [#{Time.now}] Sync close is #{conn.sync_close}"
 
     conn.extend(GetbyteForSSLSocket) unless conn.respond_to?(:getbyte)
     conn.extend(FixSSLSocketSyncClose)

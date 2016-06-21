@@ -515,7 +515,7 @@ Style/SingleLineBlockParams:
 
 # Offense count: 2
 # Cop supports --auto-correct.
-Style/SingleSpaceBeforeFirstArg:
+Style/SpaceBeforeFirstArg:
   Exclude:
     - 'lib/net/ldap/dataset.rb'
     - 'lib/net/ldap/instrumentation.rb'
