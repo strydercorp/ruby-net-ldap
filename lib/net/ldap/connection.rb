@@ -751,9 +751,9 @@ class Net::LDAP::Connection #:nodoc:
       begin
         puts "[LDAP] [#{Time.now}] (Initial) connect where timeout is #{timeout}"
         if timeout
-          conn.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
+          sock.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
         else
-          conn.connect(Socket.pack_sockaddr_in(port, addr[0][3]))
+          sock.connect(Socket.pack_sockaddr_in(port, addr[0][3]))
         end
         puts "[LDAP] [#{Time.now}] (Initial) Connect is finished"
       rescue IO::WaitReadable
