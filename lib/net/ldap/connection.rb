@@ -95,7 +95,7 @@ class Net::LDAP::Connection #:nodoc:
 
     conn = OpenSSL::SSL::SSLSocket.new(io, ctx)
 
-    use_nonblocking_connect = timeout && !ENV['FORCE_BLOCKING_LDAP_SOCKET'] == 'true'
+    use_nonblocking_connect = !(ENV['LDAP_FORCE_BLOCKING_SOCKET'] == 'true')
 
     puts "[LDAP] [#{Time.now}] Using non blocking connect is #{use_nonblocking_connect}"
 
@@ -723,7 +723,7 @@ class Net::LDAP::Connection #:nodoc:
   # Wrap around Socket.tcp to normalize with other Socket initializers
   class DefaultSocket
     def self.new(host, port, socket_opts = {})
-      puts "[LDAP] [#{Time.now}] Initializing Socket #{socket_opts}. ENV['LDAP_USE_OLD_DEFAULT_SOCKET'] is #{ENV['LDAP_USE_OLD_DEFAULT_SOCKET']}"
+      puts "[LDAP] [#{Time.now}] Initializing Socket #{socket_opts}. ENV['LDAP_USE_OLD_SOCKET'] is #{ENV['LDAP_USE_OLD_SOCKET']}"
 
       rv =
         if ENV['LDAP_USE_OLD_SOCKET'] == 'true'
@@ -747,30 +747,31 @@ class Net::LDAP::Connection #:nodoc:
         sock.setsockopt Socket::SOL_SOCKET, Socket::SO_RCVTIMEO, optval
         sock.setsockopt Socket::SOL_SOCKET, Socket::SO_SNDTIMEO, optval
       end
+      sock.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
 
-      begin
-        puts "[LDAP] [#{Time.now}] (Initial) connect where timeout is #{timeout}"
-        if timeout
-          sock.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
-        else
-          sock.connect(Socket.pack_sockaddr_in(port, addr[0][3]))
-        end
-        puts "[LDAP] [#{Time.now}] (Initial) Connect is finished"
-      rescue IO::WaitReadable
-        puts "[LDAP] [#{Time.now}] (Initial) Rescued from IO::WaitReadable"
-        if IO.select([sock], nil, nil, timeout)
-          retry
-        else
-          raise Errno::ETIMEDOUT, "OpenSSL connection read timeout"
-        end
-      rescue IO::WaitWritable
-        puts "[LDAP] [#{Time.now}] (Initial) Rescued from IO::WaitWritable"
-        if IO.select(nil, [sock], nil, timeout)
-          retry
-        else
-          raise Errno::ETIMEDOUT, "OpenSSL connection write timeout"
-        end
-      end
+      # begin
+      #   puts "[LDAP] [#{Time.now}] (Initial) connect where timeout is #{timeout}"
+      #   if timeout
+      #     sock.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
+      #   else
+      #     sock.connect(Socket.pack_sockaddr_in(port, addr[0][3]))
+      #   end
+      #   puts "[LDAP] [#{Time.now}] (Initial) Connect is finished"
+      # rescue IO::WaitReadable
+      #   puts "[LDAP] [#{Time.now}] (Initial) Rescued from IO::WaitReadable"
+      #   if IO.select([sock], nil, nil, timeout)
+      #     retry
+      #   else
+      #     raise Errno::ETIMEDOUT, "OpenSSL connection read timeout"
+      #   end
+      # rescue IO::WaitWritable
+      #   puts "[LDAP] [#{Time.now}] (Initial) Rescued from IO::WaitWritable"
+      #   if IO.select(nil, [sock], nil, timeout)
+      #     retry
+      #   else
+      #     raise Errno::ETIMEDOUT, "OpenSSL connection write timeout"
+      #   end
+      # end
 
       sock
     end
