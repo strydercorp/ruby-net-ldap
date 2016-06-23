@@ -726,14 +726,53 @@ class Net::LDAP::Connection #:nodoc:
       puts "[LDAP] [#{Time.now}] Initializing Socket #{socket_opts}. ENV['LDAP_USE_OLD_DEFAULT_SOCKET'] is #{ENV['LDAP_USE_OLD_DEFAULT_SOCKET']}"
 
       rv =
-        if ENV['LDAP_USE_OLD_DEFAULT_SOCKET'] == 'true'
+        if ENV['LDAP_USE_OLD_SOCKET']
           Socket.tcp(host, port, socket_opts)
         else
-          TCPSocket.new(host, port)
+          connect_to_(host, port, socket_opts[:connect_timeout])
         end
 
       puts "[LDAP] [#{Time.now}] Socket has been initialized"
       rv
+    end
+
+    def self.connect_to_(host, port, timeout = nil)
+      addr = Socket.getaddrinfo(host, nil)
+      sock = Socket.new(Socket.const_get(addr[0][0]), Socket::SOCK_STREAM, 0)
+
+      if timeout
+        secs = Integer(timeout)
+        usecs = Integer((timeout - secs) * 1_000_000)
+        optval = [secs, usecs].pack("l_2")
+        sock.setsockopt Socket::SOL_SOCKET, Socket::SO_RCVTIMEO, optval
+        sock.setsockopt Socket::SOL_SOCKET, Socket::SO_SNDTIMEO, optval
+      end
+
+      begin
+        puts "[LDAP] [#{Time.now}] (Initial) connect where timeout is #{timeout}"
+        if timeout
+          conn.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
+        else
+          conn.connect(Socket.pack_sockaddr_in(port, addr[0][3]))
+        end
+        puts "[LDAP] [#{Time.now}] (Initial) Connect is finished"
+      rescue IO::WaitReadable
+        puts "[LDAP] [#{Time.now}] (Initial) Rescued from IO::WaitReadable"
+        if IO.select([conn], nil, nil, timeout)
+          retry
+        else
+          raise Errno::ETIMEDOUT, "OpenSSL connection read timeout"
+        end
+      rescue IO::WaitWritable
+        puts "[LDAP] [#{Time.now}] Rescued from IO::WaitWritable"
+        if IO.select(nil, [conn], nil, timeout)
+          retry
+        else
+          raise Errno::ETIMEDOUT, "OpenSSL connection write timeout"
+        end
+      end
+
+      sock
     end
   end
 end # class Connection
