@@ -760,7 +760,7 @@ class Net::LDAP::Connection #:nodoc:
         puts "[LDAP] [#{Time.now}] (Initial) Rescued from Errno::EINPROGRESS"
         if IO.select(nil, [sock], nil, timeout).nil?
           sock.close rescue nil
-          raise Errno::ETIMEDOUT, "OpenSSL connection write timeout"
+          raise Errno::ETIMEDOUT, "TCP Socket connection timeout"
         end
         puts "[LDAP] [#{Time.now}] (Initial) Nonblocking connect is finished"
       end
