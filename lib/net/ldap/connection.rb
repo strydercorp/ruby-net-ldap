@@ -729,7 +729,7 @@ class Net::LDAP::Connection #:nodoc:
         if ENV['LDAP_USE_OLD_DEFAULT_SOCKET'] == 'true'
           Socket.tcp(host, port, socket_opts)
         else
-          TcpSocket.new(host, port)
+          TCPSocket.new(host, port)
         end
 
       puts "[LDAP] [#{Time.now}] Socket has been initialized"
