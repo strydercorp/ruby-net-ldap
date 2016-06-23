@@ -758,14 +758,14 @@ class Net::LDAP::Connection #:nodoc:
         puts "[LDAP] [#{Time.now}] (Initial) Connect is finished"
       rescue IO::WaitReadable
         puts "[LDAP] [#{Time.now}] (Initial) Rescued from IO::WaitReadable"
-        if IO.select([conn], nil, nil, timeout)
+        if IO.select([sock], nil, nil, timeout)
           retry
         else
           raise Errno::ETIMEDOUT, "OpenSSL connection read timeout"
         end
       rescue IO::WaitWritable
         puts "[LDAP] [#{Time.now}] Rescued from IO::WaitWritable"
-        if IO.select(nil, [conn], nil, timeout)
+        if IO.select(nil, [sock], nil, timeout)
           retry
         else
           raise Errno::ETIMEDOUT, "OpenSSL connection write timeout"
