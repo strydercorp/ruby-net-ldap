@@ -723,9 +723,16 @@ class Net::LDAP::Connection #:nodoc:
   # Wrap around Socket.tcp to normalize with other Socket initializers
   class DefaultSocket
     def self.new(host, port, socket_opts = {})
-      puts "[LDAP] [#{Time.now}] Initializing Socket.tcp #{socket_opts}"
-      rv = Socket.tcp(host, port, socket_opts)
-      puts "[LDAP] [#{Time.now}] Socket.tcp has been initialized"
+      puts "[LDAP] [#{Time.now}] Initializing Socket #{socket_opts}. ENV['LDAP_USE_OLD_DEFAULT_SOCKET'] is #{ENV['LDAP_USE_OLD_DEFAULT_SOCKET']}"
+
+      rv =
+        if ENV['LDAP_USE_OLD_DEFAULT_SOCKET'] == 'true'
+          Socket.tcp(host, port, socket_opts)
+        else
+          TcpSocket.new(host, port)
+        end
+
+      puts "[LDAP] [#{Time.now}] Socket has been initialized"
       rv
     end
   end
