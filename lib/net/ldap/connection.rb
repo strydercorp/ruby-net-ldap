@@ -752,14 +752,14 @@ class Net::LDAP::Connection #:nodoc:
         puts "[LDAP] [#{Time.now}] (Initial) connect where timeout is #{timeout}"
         if ENV['LDAP_FORCE_BLOCKING_SOCKET'] != 'true'
           sock.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
-          sock.read_nonblock(1)
+          sock.write_nonblock("nonblock") # needed for non-hanging puma usage?
         else
           sock.connect(Socket.pack_sockaddr_in(port, addr[0][3]))
           puts "[LDAP] [#{Time.now}] (Initial) Normal connect is finished"
         end
       rescue Errno::EINPROGRESS
         puts "[LDAP] [#{Time.now}] (Initial) Rescued from Errno::EINPROGRESS"
-        if IO.select([sock], nil, nil, timeout).nil?
+        if IO.select(nil, [sock], nil, timeout).nil?
           sock.close rescue nil
           raise Errno::ETIMEDOUT, "TCP Socket connection timeout"
         end
