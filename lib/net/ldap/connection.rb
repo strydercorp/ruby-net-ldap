@@ -31,7 +31,7 @@ class Net::LDAP::Connection #:nodoc:
     @socket_class = socket_class
   end
 
-  def prepare_socket(server, timeout = nil)
+  def prepare_socket(server, timeout=nil)
     socket = server[:socket]
     encryption = server[:encryption]
 
@@ -80,7 +80,7 @@ class Net::LDAP::Connection #:nodoc:
     end
   end
 
-  def self.wrap_with_ssl(io, tls_options = {}, timeout = nil)
+  def self.wrap_with_ssl(io, tls_options = {}, timeout=nil)
     raise Net::LDAP::NoOpenSSLError, "OpenSSL is unavailable" unless Net::LDAP::HasOpenSSL
 
     ctx = OpenSSL::SSL::SSLContext.new
@@ -94,6 +94,26 @@ class Net::LDAP::Connection #:nodoc:
     puts "[LDAP] [#{Time.now}] Creating new OpenSSL::SSL::SSLSocket instance"
 
     conn = OpenSSL::SSL::SSLSocket.new(io, ctx)
+
+    begin
+      if timeout
+        conn.connect_nonblock
+      else
+        conn.connect
+      end
+    rescue IO::WaitReadable
+      if IO.select([conn], nil, nil, timeout)
+        retry
+      else
+        raise Errno::ETIMEDOUT, "OpenSSL connection read timeout"
+      end
+    rescue IO::WaitWritable
+      if IO.select(nil, [conn], nil, timeout)
+        retry
+      else
+        raise Errno::ETIMEDOUT, "OpenSSL connection write timeout"
+      end
+    end
 
     use_nonblocking_connect = ENV['LDAP_FORCE_BLOCKING_SOCKET'] != 'true'
 
@@ -159,7 +179,7 @@ class Net::LDAP::Connection #:nodoc:
   # communications, as with simple_tls. Thanks for Kouhei Sutou for
   # generously contributing the :start_tls path.
   #++
-  def setup_encryption(args, timeout = nil)
+  def setup_encryption(args, timeout=nil)
     args[:tls_options] ||= {}
     case args[:method]
     when :simple_tls
