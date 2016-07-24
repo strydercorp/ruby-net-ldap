@@ -779,7 +779,7 @@ class Net::LDAP::Connection #:nodoc:
         end
       rescue Errno::EINPROGRESS
         puts "[LDAP] [#{Time.now}] (Initial) Rescued from Errno::EINPROGRESS"
-        if IO.select(nil, [sock], nil, timeout).nil?
+        if IO.select([sock], nil, nil, timeout).nil?
           sock.close rescue nil
           raise Errno::ETIMEDOUT, "TCP Socket connection timeout"
         end
