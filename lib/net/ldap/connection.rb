@@ -772,7 +772,7 @@ class Net::LDAP::Connection #:nodoc:
         puts "[LDAP] [#{Time.now}] (Initial) connect where timeout is #{timeout}"
         if ENV['LDAP_FORCE_BLOCKING_SOCKET'] != 'true'
           sock.connect_nonblock(Socket.pack_sockaddr_in(port, addr[0][3]))
-          sock.write_nonblock("nonblock") # needed for non-hanging puma usage?
+          sock.read_nonblock("nonblock") # needed for non-hanging puma usage?
         else
           sock.connect(Socket.pack_sockaddr_in(port, addr[0][3]))
           puts "[LDAP] [#{Time.now}] (Initial) Normal connect is finished"
